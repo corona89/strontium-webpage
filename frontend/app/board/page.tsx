@@ -9,6 +9,11 @@ export default function BoardPage() {
   const [newContent, setNewContent] = useState('');
   const [uploading, setUploading] = useState(false);
   const [fileUrl, setFileUrl] = useState('');
+  
+  // Edit states
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
+  
   const router = useRouter();
 
   const fetchMessages = () => {
@@ -84,6 +89,44 @@ export default function BoardPage() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    const token = localStorage.getItem('token');
+    
+    try {
+      const res = await fetch(`http://localhost:8000/messages/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) fetchMessages();
+      else alert('Failed to delete. You can only delete your own posts.');
+    } catch (err) {
+      alert('Delete failed');
+    }
+  };
+
+  const handleUpdate = async (id: number) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`http://localhost:8000/messages/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: editContent }),
+      });
+      if (res.ok) {
+        setEditingId(null);
+        fetchMessages();
+      } else {
+        alert('Update failed. You can only edit your own posts.');
+      }
+    } catch (err) {
+      alert('Update failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 p-8 text-zinc-900 font-sans">
       <div className="max-w-4xl mx-auto">
@@ -126,27 +169,51 @@ export default function BoardPage() {
         {/* Message List */}
         <div className="grid gap-6">
           {loading ? (
-            <div className="text-center p-20 text-zinc-400 font-medium">Loading fresh content...</div>
+            <div className="text-center p-20 text-zinc-400 font-medium">Loading content...</div>
           ) : messages.length === 0 ? (
-            <div className="p-20 text-center bg-white border border-dashed border-zinc-200 rounded-3xl text-zinc-300 font-medium">No posts yet. Start the conversation!</div>
+            <div className="p-20 text-center bg-white border border-dashed border-zinc-200 rounded-3xl text-zinc-300 font-medium">No posts yet.</div>
           ) : messages.map((msg: any) => (
             <div key={msg.id} className="p-6 bg-white border border-zinc-100 rounded-3xl shadow-sm hover:shadow-md transition duration-300">
-              <p className="text-zinc-800 text-lg leading-relaxed mb-4">{msg.content}</p>
-              {msg.file_url && (
-                <div className="mb-4">
-                  <a href={msg.file_url} target="_blank" className="text-blue-600 text-sm font-medium hover:underline flex items-center gap-2">
-                    View Attachment
-                  </a>
+              {editingId === msg.id ? (
+                <div className="space-y-3">
+                  <textarea 
+                    className="w-full p-3 bg-zinc-50 border border-zinc-200 rounded-xl resize-none h-24 outline-none"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleUpdate(msg.id)} className="px-4 py-1 bg-green-600 text-white rounded-full text-xs font-bold">SAVE</button>
+                    <button onClick={() => setEditingId(null)} className="px-4 py-1 bg-zinc-200 text-zinc-600 rounded-full text-xs font-bold">CANCEL</button>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <p className="text-zinc-800 text-lg leading-relaxed mb-4">{msg.content}</p>
+                  {msg.file_url && (
+                    <div className="mb-4">
+                      <a href={msg.file_url} target="_blank" className="text-blue-600 text-sm font-medium hover:underline flex items-center gap-2">
+                        View Attachment
+                      </a>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-4 border-t border-zinc-50">
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs text-zinc-400 font-semibold">{new Date(msg.timestamp).toLocaleString()}</span>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditingId(msg.id); setEditContent(msg.content); }} className="text-zinc-400 hover:text-blue-500 text-[10px] font-bold uppercase">EDIT</button>
+                        <button onClick={() => handleDelete(msg.id)} className="text-zinc-400 hover:text-red-500 text-[10px] font-bold uppercase">DELETE</button>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      Author #{msg.owner_id}
+                    </span>
+                  </div>
+                </>
               )}
-              <div className="flex justify-between items-center pt-4 border-t border-zinc-50">
-                <span className="text-xs text-zinc-400 font-semibold">{new Date(msg.timestamp).toLocaleString()}</span>
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                  Author #{msg.owner_id}
-                </span>
-              </div>
             </div>
           ))}
         </div>
       </div>
     </div>
+  );
+}

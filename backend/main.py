@@ -100,3 +100,46 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"file_url": f"http://localhost:8000/uploads/{file.filename}"}
+
+
+@app.put("/messages/{message_id}", response_model=schemas.Message)
+def update_message(
+    message_id: int,
+    message_update: schemas.MessageCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db),
+):
+    db_message = (
+        db.query(models.Message)
+        .filter(models.Message.id == message_id, models.Message.owner_id == current_user.id)
+        .first()
+    )
+    if not db_message:
+        raise HTTPException(status_code=404, detail="Message not found or unauthorized")
+    
+    db_message.content = message_update.content
+    if message_update.file_url:
+        db_message.file_url = message_update.file_url
+        
+    db.commit()
+    db.refresh(db_message)
+    return db_message
+
+
+@app.delete("/messages/{message_id}")
+def delete_message(
+    message_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db),
+):
+    db_message = (
+        db.query(models.Message)
+        .filter(models.Message.id == message_id, models.Message.owner_id == current_user.id)
+        .first()
+    )
+    if not db_message:
+        raise HTTPException(status_code=404, detail="Message not found or unauthorized")
+    
+    db.delete(db_message)
+    db.commit()
+    return {"message": "Message deleted successfully"}
