@@ -40,6 +40,30 @@ def create_post(user_id: int, content: str) -> str:
     db.commit()
     return f"Post created! ID: {new_msg.id}"
 
+@mcp.tool()
+def modify_post(message_id: int, content: str) -> str:
+    """Modify an existing post's content in the strontium database."""
+    db = next(database.get_db())
+    db_message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not db_message:
+        return f"Message with ID {message_id} not found."
+    
+    db_message.content = content
+    db.commit()
+    return f"Post {message_id} modified successfully!"
+
+@mcp.tool()
+def delete_post(message_id: int) -> str:
+    """Delete a post from the strontium database."""
+    db = next(database.get_db())
+    db_message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not db_message:
+        return f"Message with ID {message_id} not found."
+    
+    db.delete(db_message)
+    db.commit()
+    return f"Post {message_id} deleted successfully."
+
 @mcp.resource("strontium://stats")
 def get_stats() -> str:
     """Get general stats of the board."""
