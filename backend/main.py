@@ -158,6 +158,18 @@ def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
 
+@app.post("/users/me/generate-api-key")
+def generate_api_key(
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db),
+):
+    import secrets
+    new_key = f"sk-{secrets.token_urlsafe(24)}"
+    current_user.api_key = new_key
+    db.commit()
+    return {"api_key": new_key}
+
+
 @app.put("/users/me/api-key")
 def update_api_key(
     user_update: schemas.UserUpdate,

@@ -21,6 +21,7 @@ export default function BoardPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
@@ -56,25 +57,22 @@ export default function BoardPage() {
     fetchUserData();
   }, []);
 
-  const handleSaveApiKey = async () => {
+  const handleGenerateApiKey = async () => {
     const token = localStorage.getItem('token');
+    setIsGenerating(true);
     try {
-      const res = await fetch('http://localhost:8000/users/me/api-key', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ api_key: apiKey }),
+      const res = await fetch('http://localhost:8000/users/me/generate-api-key', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        alert('API Key saved successfully!');
-        setShowApiKeyModal(false);
-        setShowSettings(false);
+        const data = await res.json();
+        setApiKey(data.api_key);
+        alert('New API Key generated successfully!');
       } else {
-        alert('Failed to save API Key');
+        alert('Failed to generate API Key');
       }
-    } catch (err) { alert('Save failed'); }
+    } catch (err) { alert('Generation failed'); } finally { setIsGenerating(false); }
   };
 
   const fetchMessages = useCallback(async (isInitial = false, term = searchTerm) => {
@@ -214,7 +212,7 @@ export default function BoardPage() {
                   onClick={() => setShowApiKeyModal(true)}
                   className="w-full text-left px-4 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-800 transition"
                 >
-                  Register API Key
+                  Manage API Key
                 </button>
                 <button 
                   onClick={() => { localStorage.removeItem('token'); router.push('/'); }}
@@ -232,18 +230,39 @@ export default function BoardPage() {
       {showApiKeyModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <h2 className="text-xl font-black mb-2 tracking-tight">API Key Registration</h2>
-            <p className="text-zinc-500 text-sm mb-6">Enter your key to enable advanced MCP features.</p>
-            <input 
-              type="password"
-              placeholder="Enter your API Key"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-4 mb-6 focus:ring-2 focus:ring-blue-500 outline-none text-white transition"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <div className="flex gap-3">
-              <button onClick={handleSaveApiKey} className="flex-1 py-4 bg-blue-600 rounded-2xl font-black text-sm hover:bg-blue-500 transition">SAVE</button>
-              <button onClick={() => setShowApiKeyModal(false)} className="flex-1 py-4 bg-zinc-800 rounded-2xl font-black text-sm hover:bg-zinc-700 transition">CANCEL</button>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-xl font-black mb-1 tracking-tight">API Key Management</h2>
+                <p className="text-zinc-500 text-xs font-semibold">Generate keys for external AI tools.</p>
+              </div>
+              <button onClick={() => setShowApiKeyModal(false)} className="text-zinc-600 hover:text-white transition">✕</button>
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 mb-8 flex items-center gap-3">
+              <code className="flex-1 text-xs font-mono text-zinc-400 truncate">
+                {apiKey || "No key generated yet"}
+              </code>
+              {apiKey && (
+                <button 
+                  onClick={() => { navigator.clipboard.writeText(apiKey); alert('Copied!'); }}
+                  className="text-[10px] bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded-lg font-black"
+                >
+                  COPY
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <button 
+                onClick={handleGenerateApiKey} 
+                disabled={isGenerating}
+                className="w-full py-4 bg-blue-600 rounded-2xl font-black text-sm hover:bg-blue-500 transition shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+              >
+                {isGenerating ? "GENERATING..." : apiKey ? "REGENERATE KEY" : "GENERATE NEW KEY"}
+              </button>
+              <p className="text-[10px] text-center text-zinc-600 font-bold uppercase tracking-widest pt-2">
+                ⚠️ Regenerating will invalidate your old key.
+              </p>
             </div>
           </div>
         </div>
