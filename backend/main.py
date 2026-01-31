@@ -62,11 +62,14 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
 
 @app.get("/messages/", response_model=List[schemas.Message])
 def read_messages(
-    skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)
+    skip: int = 0, limit: int = 10, search: str = None, db: Session = Depends(database.get_db)
 ):
+    query = db.query(models.Message)
+    if search:
+        query = query.filter(models.Message.content.ilike(f"%{search}%"))
+    
     messages = (
-        db.query(models.Message)
-        .order_by(models.Message.timestamp.desc())
+        query.order_by(models.Message.timestamp.desc())
         .offset(skip)
         .limit(limit)
         .all()
