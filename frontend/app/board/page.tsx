@@ -108,6 +108,9 @@ export default function BoardPage() {
       });
       if (res.ok) {
         setNewContent(''); setFileUrl(''); fetchMessages(true);
+      } else {
+        const errData = await res.json();
+        alert(`Failed to post: ${errData.detail || res.statusText}`);
       }
     } catch (err) { alert('Post failed'); }
   };

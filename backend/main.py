@@ -83,7 +83,12 @@ def create_message(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(database.get_db),
 ):
-    db_message = models.Message(**message.dict(), owner_id=current_user.id)
+    print(f"Creating message for user: {current_user.email}")
+    db_message = models.Message(
+        content=message.content, 
+        file_url=message.file_url,
+        owner_id=current_user.id
+    )
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
