@@ -17,8 +17,23 @@ export default function BoardPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   
+  // Settings Dropdown state
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  
   const router = useRouter();
   const observer = useRef<IntersectionObserver | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchMessages = useCallback(async (isInitial = false, term = searchTerm) => {
     if (loading) return;
@@ -51,22 +66,22 @@ export default function BoardPage() {
     }
   }, [page, loading, searchTerm]);
 
-  // Infinite scroll observer
   const lastElementRef = useCallback((node: HTMLDivElement) => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
-    
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
         fetchMessages();
       }
     });
-    
     if (node) observer.current.observe(node);
   }, [loading, hasMore, fetchMessages]);
 
   useEffect(() => {
-    fetchMessages(true);
+    const delayDebounceFn = setTimeout(() => {
+      fetchMessages(true);
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,13 +138,13 @@ export default function BoardPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-blue-500/30">
       <div className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 px-8 py-4">
-        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <h1 className="text-2xl font-black tracking-tighter text-blue-500">STRONTIUM</h1>
+        <div className="max-w-[1600px] mx-auto flex justify-between items-center gap-6">
+          <h1 className="text-2xl font-black tracking-tighter text-blue-500 shrink-0">STRONTIUM</h1>
           
-          <div className="flex-1 max-w-2xl w-full relative">
+          <div className="flex-1 max-w-2xl relative">
             <input 
               type="text"
-              placeholder="Search content or date..."
+              placeholder="Search posts..."
               className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-2 px-6 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -137,20 +152,41 @@ export default function BoardPage() {
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500">🔍</div>
           </div>
 
-          <button onClick={() => { localStorage.removeItem('token'); router.push('/'); }} className="px-5 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-xs font-bold hover:bg-zinc-800 transition">
-            LOGOUT
-          </button>
+          <div className="relative shrink-0" ref={settingsRef}>
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 bg-zinc-900 border border-zinc-800 rounded-full hover:bg-zinc-800 transition active:scale-95"
+            >
+              <span className="text-lg">⚙️</span>
+            </button>
+            
+            {showSettings && (
+              <div className="absolute right-0 mt-3 w-48 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl py-2 overflow-hidden animate-in fade-in zoom-in duration-150">
+                <div className="px-4 py-2 border-b border-zinc-800 mb-1">
+                  <p className="text-[10px] font-black text-zinc-500 uppercase">Settings</p>
+                </div>
+                <button 
+                  onClick={() => { localStorage.removeItem('token'); router.push('/'); }}
+                  className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-500/10 transition"
+                >
+                  Logout
+                </button>
+                <div className="px-4 py-2 text-[10px] text-zinc-600 font-medium">
+                  v1.2.0 Stable
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <main className="p-8 max-w-[1600px] mx-auto">
-        {/* Horizontal Editor Section */}
         <div className="mb-12">
           <form onSubmit={handlePost} className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] p-8 flex flex-col md:flex-row gap-6 items-end">
             <div className="flex-1 w-full">
               <textarea 
                 className="w-full bg-transparent border-none text-xl md:text-2xl font-medium placeholder:text-zinc-700 resize-none h-24 focus:ring-0 outline-none"
-                placeholder="What's happening?"
+                placeholder="What's on your mind?"
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
                 required
@@ -169,7 +205,6 @@ export default function BoardPage() {
           </form>
         </div>
 
-        {/* Horizontal Card Grid */}
         <div className="flex overflow-x-auto gap-6 pb-12 snap-x no-scrollbar">
           {messages.map((msg: any, index: number) => (
             <div 
