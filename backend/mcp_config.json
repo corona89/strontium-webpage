@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "strontium": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "env": {
+        "PYTHONPATH": "."
+      },
+      "cwd": "/Users/corona89/.openclaw/workspace/strontium-webpage/backend"
+    }
+  }
+}

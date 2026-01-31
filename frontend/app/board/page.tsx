@@ -205,12 +205,12 @@ export default function BoardPage() {
           </form>
         </div>
 
-        <div className="flex overflow-x-auto gap-6 pb-12 snap-x no-scrollbar">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-12">
           {messages.map((msg: any, index: number) => (
             <div 
               key={msg.id} 
               ref={index === messages.length - 1 ? lastElementRef : null}
-              className="min-w-[320px] md:min-w-[400px] snap-start bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] flex flex-col justify-between hover:border-zinc-700 transition group relative overflow-hidden"
+              className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] flex flex-col justify-between hover:border-zinc-700 transition group relative overflow-hidden"
             >
               {editingId === msg.id ? (
                 <div className="h-full flex flex-col">
