@@ -20,6 +20,7 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     content = Column(String, index=True)
+    file_url = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     owner_id = Column(Integer, ForeignKey("users.id"))
 

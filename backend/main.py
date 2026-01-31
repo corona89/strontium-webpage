@@ -1,13 +1,23 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
+import shutil
 import models, schemas, auth, database
 
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
+
+# Create uploads directory
+UPLOAD_DIR = "uploads"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -82,3 +92,11 @@ def google_auth(token: str):
     return {
         "message": "Google auth not fully implemented in backend without credentials, but endpoint exists."
     }
+
+
+@app.post("/upload/")
+async def upload_file(file: UploadFile = File(...)):
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"file_url": f"http://localhost:8000/uploads/{file.filename}"}
