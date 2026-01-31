@@ -11,7 +11,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new URLSearchParams();
-    formData.append('username', email); // backend expects 'username'
+    formData.append('username', email);
     formData.append('password', password);
 
     try {
@@ -29,36 +29,44 @@ export default function LoginPage() {
         setError('Invalid credentials');
       }
     } catch (err) {
-      setError('Connection failed');
+      setError('Connection failed: Make sure backend is running on port 8000');
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-8 bg-white rounded shadow-md w-96">
-        <h1 className="mb-6 text-2xl font-bold text-center text-black">Login</h1>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-100 text-zinc-900">
+      <div className="p-8 bg-white rounded-2xl shadow-xl w-96 border border-zinc-200">
+        <h1 className="mb-6 text-2xl font-bold text-center text-zinc-900">Strontium Login</h1>
+        {error && <p className="text-red-500 text-sm mb-4 text-center p-2 bg-red-50 rounded">{error}</p>}
         <form onSubmit={handleLogin} className="space-y-4">
-          <input 
-            type="email" 
-            placeholder="Email" 
-            className="w-full p-2 border rounded text-black" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            className="w-full p-2 border rounded text-black" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600">Login</button>
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input 
+              type="email" 
+              placeholder="you@example.com" 
+              className="w-full p-2 border rounded-lg bg-white text-black focus:ring-2 focus:ring-blue-500 outline-none" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              className="w-full p-2 border rounded-lg bg-white text-black focus:ring-2 focus:ring-blue-500 outline-none" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="w-full p-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition font-semibold">
+            Sign In
+          </button>
         </form>
-        <div className="mt-4 border-t pt-4">
-          <button type="button" className="w-full p-2 text-gray-700 border rounded hover:bg-gray-50 flex items-center justify-center gap-2">
+        <div className="mt-6 border-t pt-4 border-zinc-100">
+          <button type="button" className="w-full p-2 text-zinc-700 border border-zinc-300 rounded-lg hover:bg-zinc-50 flex items-center justify-center gap-2 transition">
             Login with Google
           </button>
         </div>
