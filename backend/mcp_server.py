@@ -6,6 +6,17 @@ import models, database, schemas
 mcp = FastMCP("Strontium")
 
 @mcp.tool()
+def get_user_api_key(email: str) -> str:
+    """Retrieve the API key for a specific user to use in other MCP tools."""
+    db = next(database.get_db())
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        return f"User {email} not found."
+    if not user.api_key:
+        return f"User {email} has no API key registered."
+    return f"API Key for {email}: {user.api_key}"
+
+@mcp.tool()
 def list_messages(skip: int = 0, limit: int = 10) -> str:
     """List messages from the strontium database."""
     db = next(database.get_db())
@@ -32,13 +43,28 @@ def search_messages(query: str) -> str:
     return "\n".join(result)
 
 @mcp.tool()
-def create_post(user_id: int, content: str) -> str:
-    """Create a new post in the strontium database (Internal use)."""
+def create_post(user_id: int, content: str, api_key: str = None) -> str:
+    """
+    Create a new post. 
+    If the user has an API Key registered, it can be provided for verification/logging.
+    """
     db = next(database.get_db())
-    new_msg = models.Message(content=content, owner_id=user_id)
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return "User not found."
+    
+    # Example logic using the API Key
+    key_status = ""
+    if user.api_key:
+        if api_key == user.api_key:
+            key_status = " [Verified with API Key]"
+        else:
+            key_status = " [API Key Mismatch/Not Provided]"
+
+    new_msg = models.Message(content=f"{content}{key_status}", owner_id=user_id)
     db.add(new_msg)
     db.commit()
-    return f"Post created! ID: {new_msg.id}"
+    return f"Post created! ID: {new_msg.id}{key_status}"
 
 @mcp.tool()
 def modify_post(message_id: int, content: str) -> str:

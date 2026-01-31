@@ -151,3 +151,19 @@ def delete_message(
     db.delete(db_message)
     db.commit()
     return {"message": "Message deleted successfully"}
+
+
+@app.get("/users/me", response_model=schemas.User)
+def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
+    return current_user
+
+
+@app.put("/users/me/api-key")
+def update_api_key(
+    user_update: schemas.UserUpdate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db),
+):
+    current_user.api_key = user_update.api_key
+    db.commit()
+    return {"message": "API Key updated successfully"}

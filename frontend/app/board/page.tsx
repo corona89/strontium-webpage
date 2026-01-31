@@ -19,6 +19,8 @@ export default function BoardPage() {
   
   // Settings Dropdown state
   const [showSettings, setShowSettings] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKey, setApiKey] = useState('');
   const settingsRef = useRef<HTMLDivElement>(null);
   
   const router = useRouter();
@@ -34,6 +36,46 @@ export default function BoardPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch current user data (including API key)
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:8000/users/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setApiKey(data.api_key || '');
+      }
+    } catch (err) { console.error("Failed to fetch user data"); }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const handleSaveApiKey = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('http://localhost:8000/users/me/api-key', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+      if (res.ok) {
+        alert('API Key saved successfully!');
+        setShowApiKeyModal(false);
+        setShowSettings(false);
+      } else {
+        alert('Failed to save API Key');
+      }
+    } catch (err) { alert('Save failed'); }
+  };
 
   const fetchMessages = useCallback(async (isInitial = false, term = searchTerm) => {
     if (loading) return;
@@ -169,19 +211,43 @@ export default function BoardPage() {
                   <p className="text-[10px] font-black text-zinc-500 uppercase">Settings</p>
                 </div>
                 <button 
+                  onClick={() => setShowApiKeyModal(true)}
+                  className="w-full text-left px-4 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-800 transition"
+                >
+                  Register API Key
+                </button>
+                <button 
                   onClick={() => { localStorage.removeItem('token'); router.push('/'); }}
-                  className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-500/10 transition"
+                  className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-500/10 transition border-t border-zinc-800"
                 >
                   Logout
                 </button>
-                <div className="px-4 py-2 text-[10px] text-zinc-600 font-medium">
-                  v1.2.0 Stable
-                </div>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* API Key Modal */}
+      {showApiKeyModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+            <h2 className="text-xl font-black mb-2 tracking-tight">API Key Registration</h2>
+            <p className="text-zinc-500 text-sm mb-6">Enter your key to enable advanced MCP features.</p>
+            <input 
+              type="password"
+              placeholder="Enter your API Key"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-4 mb-6 focus:ring-2 focus:ring-blue-500 outline-none text-white transition"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <div className="flex gap-3">
+              <button onClick={handleSaveApiKey} className="flex-1 py-4 bg-blue-600 rounded-2xl font-black text-sm hover:bg-blue-500 transition">SAVE</button>
+              <button onClick={() => setShowApiKeyModal(false)} className="flex-1 py-4 bg-zinc-800 rounded-2xl font-black text-sm hover:bg-zinc-700 transition">CANCEL</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="p-8 max-w-[1600px] mx-auto">
         <div className="mb-12">

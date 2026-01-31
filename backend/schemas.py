@@ -29,9 +29,14 @@ class UserCreate(UserBase):
     password: str
 
 
+class UserUpdate(BaseModel):
+    api_key: Optional[str] = None
+
+
 class User(UserBase):
     id: int
     is_active: bool
+    api_key: Optional[str] = None
     messages: List[Message] = []
 
     class Config:
