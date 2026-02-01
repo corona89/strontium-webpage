@@ -1,0 +1,14 @@
+services:
+  strontium:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+      - "5001:5001"
+    volumes:
+      - ./backend/strontium.db:/app/backend/strontium.db
+      - ./backend/uploads:/app/backend/uploads
+    environment:
+      - DATABASE_URL=sqlite:///./strontium.db
+    restart: always

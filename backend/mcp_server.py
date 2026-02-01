@@ -6,6 +6,27 @@ import models, database, schemas
 mcp = FastMCP("Strontium")
 
 @mcp.tool()
+def create_post_with_file(user_id: int, content: str, file_url: str = None, api_key: str = None) -> str:
+    """Create a new post with an attached file URL."""
+    db = next(database.get_db())
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return "User not found."
+    
+    key_status = ""
+    if user.api_key:
+        if api_key == user.api_key:
+            key_status = " [Verified]"
+        else:
+            key_status = " [Unverified Key]"
+
+    new_msg = models.Message(content=f"{content}{key_status}", file_url=file_url, owner_id=user_id)
+    db.add(new_msg)
+    db.commit()
+    return f"Post created with file! ID: {new_msg.id}"
+
+
+@mcp.tool()
 def get_user_api_key(email: str) -> str:
     """Retrieve the API key for a specific user to use in other MCP tools."""
     db = next(database.get_db())
@@ -97,6 +118,11 @@ def get_stats() -> str:
     count = db.query(models.Message).count()
     users = db.query(models.User).count()
     return f"Total Posts: {count}\nTotal Users: {users}"
+
+@mcp.tool()
+def get_board_url() -> str:
+    """Get the URL of the board."""
+    return "http://localhost:5001/board"
 
 if __name__ == "__main__":
     mcp.run()

@@ -10,7 +10,7 @@ import models, schemas, auth, database
 
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI()
+app = FastAPI(redirect_slashes=False)
 
 # Create uploads directory
 UPLOAD_DIR = "uploads"
@@ -21,7 +21,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,6 +61,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)
 
 
 @app.get("/messages/", response_model=List[schemas.Message])
+@app.get("/messages", response_model=List[schemas.Message])
 def read_messages(
     skip: int = 0, limit: int = 10, search: str = None, db: Session = Depends(database.get_db)
 ):
@@ -105,9 +106,35 @@ def google_auth(token: str):
 @app.post("/upload/")
 async def upload_file(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+    # Ensure unique filename if exists
+    name, ext = os.path.splitext(file.filename)
+    counter = 1
+    while os.path.exists(file_path):
+        file_path = os.path.join(UPLOAD_DIR, f"{name}_{counter}{ext}")
+        counter += 1
+    
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    return {"file_url": f"http://localhost:8000/uploads/{file.filename}"}
+    
+    return {"file_url": f"http://localhost:8000/uploads/{os.path.basename(file_path)}"}
+
+
+@app.post("/upload-multiple/")
+async def upload_multiple_files(files: List[UploadFile] = File(...)):
+    urls = []
+    for file in files:
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        name, ext = os.path.splitext(file.filename)
+        counter = 1
+        while os.path.exists(file_path):
+            file_path = os.path.join(UPLOAD_DIR, f"{name}_{counter}{ext}")
+            counter += 1
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        urls.append(f"http://localhost:8000/uploads/{os.path.basename(file_path)}")
+    
+    return {"file_urls": urls}
 
 
 @app.put("/messages/{message_id}", response_model=schemas.Message)
@@ -179,3 +206,7 @@ def update_api_key(
     current_user.api_key = user_update.api_key
     db.commit()
     return {"message": "API Key updated successfully"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

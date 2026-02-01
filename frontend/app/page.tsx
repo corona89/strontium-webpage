@@ -32,7 +32,7 @@ export default function LoginPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/token', {
+      const res = await fetch('/api/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData,
@@ -109,7 +109,7 @@ export default function LoginPage() {
           </button>
         </div>
       </div>
-      <p className="mt-8 text-zinc-600 text-[10px] font-black tracking-widest">STRONTIUM v1.2.0 STABLE</p>
+      <p className="mt-8 text-zinc-600 text-[10px] font-black tracking-widest">STRONTIUM v1.3.0 STABLE</p>
     </div>
   );
 }
